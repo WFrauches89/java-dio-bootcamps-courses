@@ -6,20 +6,59 @@ public class Dev {
     private String nome;
     private Set<Conteudo> conteudosInscritos = new LinkedHashSet<>();
     private Set<Conteudo> conteudosConcluidos = new LinkedHashSet<>();
+    private Set<Skills> skillsHabilitadas = new HashSet<>();
+    private Set<Bootcamp> listaBootcamps = new HashSet<>();
 
     public void inscreverBootcamp(Bootcamp bootcamp){
         this.conteudosInscritos.addAll(bootcamp.getConteudos());
+        this.listaBootcamps.add(bootcamp);
         bootcamp.getDevsInscritos().add(this);
     }
 
     public void progredir() {
-        Optional<Conteudo> conteudo = this.conteudosInscritos.stream().findFirst();
-        if(conteudo.isPresent()) {
-            this.conteudosConcluidos.add(conteudo.get());
-            this.conteudosInscritos.remove(conteudo.get());
-        } else {
-            System.err.println("Você não está matriculado em nenhum conteúdo!");
+        if (conteudosInscritos.isEmpty()) {
+            if (listaBootcamps.isEmpty()) {
+                System.err.println("Você não está inscrito em nenhum bootcamp!");
+            } else {
+                System.err.println("Você já concluiu todos os conteúdos do bootcamp!");
+            }
+            return;
         }
+
+        // Pega o primeiro conteúdo da lista de inscritos
+        Conteudo conteudo = this.conteudosInscritos.stream().findFirst().get();
+
+        // Marca o conteúdo como concluído e remove dos conteúdos inscritos
+        this.conteudosConcluidos.add(conteudo);
+        this.conteudosInscritos.remove(conteudo);
+        System.out.println("Conteúdo " + conteudo.getTitulo() + " concluído.");
+
+        // Verifica e adiciona novas skills se for o caso
+        addNewSkill();
+    }
+
+    public void addNewSkill() {
+        Set<Bootcamp> bootcampsConcluidos = new HashSet<>(); // Lista de bootcamps para remover depois da iteração
+
+        for (Bootcamp bootcamp : listaBootcamps) {
+            // Verifica se todos os conteúdos do bootcamp foram concluídos
+            if (conteudosConcluidos.containsAll(bootcamp.getConteudos())) {
+                // Verifica se o nome do bootcamp já existe nas skills habilitadas
+                boolean skillJaHabilitada = skillsHabilitadas.stream()
+                        .anyMatch(skill -> skill.getNome().equals(bootcamp.getNome()));
+
+                // Adiciona a skill apenas se ainda não estiver habilitada
+                if (!skillJaHabilitada) {
+                    Skills novaSkill = new Skills();
+                    novaSkill.setNome(bootcamp.getNome());
+                    skillsHabilitadas.add(novaSkill);  // Adiciona a nova skill
+                    bootcampsConcluidos.add(bootcamp); // Marca o bootcamp como concluído
+                }
+            }
+        }
+
+        // Remove todos os bootcamps concluídos da lista após a iteração
+        listaBootcamps.removeAll(bootcampsConcluidos);
     }
 
     public double calcularTotalXp() {
@@ -60,6 +99,14 @@ public class Dev {
 
     public void setConteudosConcluidos(Set<Conteudo> conteudosConcluidos) {
         this.conteudosConcluidos = conteudosConcluidos;
+    }
+
+    public Set<Skills> getSkillsHabilitadas() {
+        return skillsHabilitadas;
+    }
+
+    public Set<Bootcamp> getListaBootcamps() {
+        return listaBootcamps;
     }
 
     @Override
